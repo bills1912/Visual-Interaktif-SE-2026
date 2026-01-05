@@ -1,56 +1,691 @@
 <!DOCTYPE html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sensus Ekonomi 2026 - Visual Interaktif</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&display=swap" rel="stylesheet">
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Inter', 'sans-serif'],
-              serif: ['Playfair Display', 'serif'],
-            },
-            colors: {
-              bpsOrange: '#F97316', // Orange-500
-              bpsBlue: '#0284c7',   // Sky-600
-              bpsDark: '#0f172a',   // Slate-950
-              bpsBlack: '#020617',  // Slate-950 darker
-            }
-          }
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sensus Ekonomi 2026 - Visual Interaktif</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:wght@400;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] },
+          colors: { bpsOrange: '#F97316', bpsBlue: '#3B82F6', bpsTeal: '#14B8A6', bpsPurple: '#8B5CF6' }
         }
       }
-    </script>
-    <style>
-      .no-scrollbar::-webkit-scrollbar {
-          display: none;
-      }
-      .no-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-      }
-      body {
-        overflow-x: hidden;
-        background-color: #020617;
-      }
-    </style>
-  <script type="importmap">
+    }
+  </script>
+  <style>
+    html { scroll-behavior: smooth; }
+    body { overflow-x: hidden; }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #F97316; border-radius: 4px; }
+    .panel { transition: opacity 0.4s ease-out; }
+    .panel-hidden { opacity: 0; pointer-events: none; visibility: hidden; }
+    .panel-visible { opacity: 1; pointer-events: auto; visibility: visible; }
+  </style>
+<script type="importmap">
 {
   "imports": {
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "recharts": "https://esm.sh/recharts@^3.6.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
     "react": "https://esm.sh/react@^19.2.3",
     "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "framer-motion": "https://esm.sh/framer-motion@^12.23.26"
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "framer-motion": "https://esm.sh/framer-motion@^12.23.27",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0"
   }
 }
 </script>
 </head>
-  <body>
-    <div id="root"></div>
-  </body>
+<body>
+  <div id="root"></div>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+  <script>
+    const { useState, useEffect, useRef } = React;
+    const { motion, useScroll, useTransform, useSpring } = Motion;
+    const h = React.createElement;
+
+    // Icons
+    const Icon = (p) => h('svg', { xmlns: 'http://www.w3.org/2000/svg', width: p.size || 24, height: p.size || 24, viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', className: p.className }, p.children);
+    const ChevronDown = (p) => h(Icon, p, h('path', { d: 'M6 9l6 6 6-6' }));
+    const CheckCircle2 = (p) => h(Icon, p, [h('circle', { key: 1, cx: 12, cy: 12, r: 10 }), h('path', { key: 2, d: 'm9 12 2 2 4-4' })]);
+    const XCircle = (p) => h(Icon, p, [h('circle', { key: 1, cx: 12, cy: 12, r: 10 }), h('path', { key: 2, d: 'm15 9-6 6' }), h('path', { key: 3, d: 'm9 9 6 6' })]);
+    const AlertCircle = (p) => h(Icon, p, [h('circle', { key: 1, cx: 12, cy: 12, r: 10 }), h('line', { key: 2, x1: 12, y1: 8, x2: 12, y2: 12 }), h('line', { key: 3, x1: 12, y1: 16, x2: 12.01, y2: 16 })]);
+    const FileText = (p) => h(Icon, p, [h('path', { key: 1, d: 'M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z' }), h('polyline', { key: 2, points: '14 2 14 8 20 8' })]);
+    const Store = (p) => h(Icon, p, [h('path', { key: 1, d: 'm2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7' }), h('path', { key: 2, d: 'M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8' })]);
+    const DollarSign = (p) => h(Icon, p, [h('line', { key: 1, x1: 12, y1: 2, x2: 12, y2: 22 }), h('path', { key: 2, d: 'M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6' })]);
+    const MapPin = (p) => h(Icon, p, [h('path', { key: 1, d: 'M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z' }), h('circle', { key: 2, cx: 12, cy: 10, r: 3 })]);
+    const Users = (p) => h(Icon, p, [h('path', { key: 1, d: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2' }), h('circle', { key: 2, cx: 9, cy: 7, r: 4 })]);
+    const Wifi = (p) => h(Icon, p, [h('path', { key: 1, d: 'M5 13a10 10 0 0 1 14 0' }), h('path', { key: 2, d: 'M8.5 16.5a5 5 0 0 1 7 0' })]);
+    const Award = (p) => h(Icon, p, [h('circle', { key: 1, cx: 12, cy: 8, r: 6 }), h('path', { key: 2, d: 'M15.477 12.89 17 22l-5-3-5 3 1.523-9.11' })]);
+    const Leaf = (p) => h(Icon, p, [h('path', { key: 1, d: 'M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z' })]);
+    const CreditCard = (p) => h(Icon, p, [h('rect', { key: 1, width: 20, height: 14, x: 2, y: 5, rx: 2 }), h('line', { key: 2, x1: 2, y1: 10, x2: 22, y2: 10 })]);
+    const Building2 = (p) => h(Icon, p, [h('path', { key: 1, d: 'M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z' })]);
+    const Database = (p) => h(Icon, p, [h('ellipse', { key: 1, cx: 12, cy: 5, rx: 9, ry: 3 }), h('path', { key: 2, d: 'M3 5V19A9 3 0 0 0 21 19V5' })]);
+    const Smartphone = (p) => h(Icon, p, [h('rect', { key: 1, width: 14, height: 20, x: 5, y: 2, rx: 2, ry: 2 }), h('path', { key: 2, d: 'M12 18h.01' })]);
+    const Globe = (p) => h(Icon, p, [h('circle', { key: 1, cx: 12, cy: 12, r: 10 }), h('line', { key: 2, x1: 2, y1: 12, x2: 22, y2: 12 })]);
+    const Clipboard = (p) => h(Icon, p, [h('rect', { key: 1, width: 8, height: 4, x: 8, y: 2, rx: 1, ry: 1 }), h('path', { key: 2, d: 'M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2' })]);
+    const PieChart = (p) => h(Icon, p, [h('path', { key: 1, d: 'M21.21 15.89A10 10 0 1 1 8 2.83' }), h('path', { key: 2, d: 'M22 12A10 10 0 0 0 12 2v10z' })]);
+    const TrendingUp = (p) => h(Icon, p, [h('polyline', { key: 1, points: '22 7 13.5 15.5 8.5 10.5 2 17' })]);
+    const Landmark = (p) => h(Icon, p, [h('line', { key: 1, x1: 3, y1: 22, x2: 21, y2: 22 }), h('polygon', { key: 2, points: '12 2 20 7 4 7' })]);
+    const Shield = (p) => h(Icon, p, h('path', { d: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z' }));
+
+    // Navbar
+    const Navbar = () => {
+      const [scrolled, setScrolled] = useState(false);
+      useEffect(() => {
+        const handleScroll = () => setScrolled(window.scrollY > 50);
+        window.addEventListener('scroll', handleScroll);
+        return () => window.removeEventListener('scroll', handleScroll);
+      }, []);
+      return h('nav', { className: 'fixed top-0 w-full z-50 transition-all duration-500 ' + (scrolled ? 'bg-white/95 shadow-lg backdrop-blur-md py-2' : 'bg-transparent py-4') },
+        h('div', { className: 'container mx-auto px-6 flex justify-between items-center' },
+          h('div', { className: 'flex items-center gap-3' },
+            h('img', { src: './assets/Picture6.png', alt: 'SE2026', className: 'h-10 object-contain' }),
+            h('div', { className: 'hidden sm:block ' + (scrolled ? 'text-slate-800' : 'text-slate-700') },
+              h('div', { className: 'text-[10px] font-medium uppercase tracking-wider opacity-70' }, 'Badan Pusat Statistik'),
+              h('div', { className: 'font-serif font-bold' }, 'Sensus Ekonomi 2026')
+            )
+          ),
+          h('div', { className: 'flex items-center gap-4' },
+            h('span', { className: 'text-xs font-bold uppercase tracking-widest ' + (scrolled ? 'text-bpsOrange' : 'text-slate-600') }, 'Visual Interaktif'),
+            h('img', { src: './assets/Picture6.png', alt: 'Badge', className: 'h-10 object-contain' })
+          )
+        )
+      );
+    };
+
+    // Hero
+    const HeroSection = () => {
+      const ref = useRef(null);
+      const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
+      const opacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+      const scale = useTransform(scrollYProgress, [0, 0.5], [1, 0.8]);
+      const y = useTransform(scrollYProgress, [0, 0.5], [0, 100]);
+
+      return h('section', { ref, className: 'h-screen relative overflow-hidden bg-gradient-to-br from-orange-50 via-white to-yellow-50' },
+        h('div', { className: 'absolute inset-0 opacity-20', style: { backgroundImage: 'radial-gradient(circle at 2px 2px, #F97316 1px, transparent 0)', backgroundSize: '40px 40px' } }),
+        h(motion.div, { style: { opacity, scale, y }, className: 'relative z-10 h-full flex items-center justify-center' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'text-center lg:text-left' },
+                h('img', { src: './assets/Picture6.png', alt: 'Logo', className: 'h-28 md:h-36 object-contain mx-auto lg:mx-0 mb-6' }),
+                h('h1', { className: 'font-serif text-5xl md:text-7xl font-black mb-4 leading-tight' },
+                  h('span', { className: 'text-slate-800' }, 'SENSUS'), h('br'),
+                  h('span', { className: 'text-bpsOrange' }, 'EKONOMI'), h('br'),
+                  h('span', { className: 'text-slate-800' }, '2026')
+                ),
+                h('p', { className: 'text-lg md:text-xl text-slate-600 max-w-lg mx-auto lg:mx-0' },
+                  h('span', { className: 'font-bold text-bpsOrange' }, 'Mencatat Ekonomi Indonesia.'), h('br'), 'Merekam denyut nadi ekonomi bangsa.'
+                )
+              ),
+              h('div', { className: 'relative flex justify-center' },
+                h('div', { className: 'absolute top-0 right-4 md:right-10 bg-white rounded-2xl p-4 shadow-xl border max-w-[200px] z-20' },
+                  h('p', { className: 'text-sm font-bold text-slate-700' }, '"Halo! Saya ', h('span', { className: 'text-bpsOrange' }, 'Bung Itung'), '!"')
+                ),
+                h('img', { src: './assets/Picture67.png', alt: 'Bung Itung', className: 'h-[350px] md:h-[450px] object-contain drop-shadow-2xl' })
+              )
+            )
+          )
+        ),
+        h('div', { className: 'absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center z-20' },
+          h('span', { className: 'text-sm text-slate-500 mb-2' }, 'Scroll untuk mulai'),
+          h('div', { className: 'w-12 h-12 rounded-full bg-bpsOrange text-white flex items-center justify-center shadow-lg' }, h(ChevronDown, { className: 'w-6 h-6' }))
+        )
+      );
+    };
+
+    // State-based ScrollSection - HANYA 1 panel visible pada satu waktu
+    const ScrollSection = ({ panels, height = '400vh', id }) => {
+      const ref = useRef(null);
+      const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
+      const [active, setActive] = useState(0);
+      const numPanels = panels.length;
+      
+      useEffect(() => {
+        const unsubscribe = scrollYProgress.on("change", (v) => {
+          const idx = Math.min(Math.floor(v * numPanels), numPanels - 1);
+          if (idx !== active) setActive(idx);
+        });
+        return () => unsubscribe();
+      }, [scrollYProgress, numPanels, active]);
+
+      return h('section', { ref, id, className: 'relative', style: { height } },
+        h('div', { className: 'sticky top-0 h-screen overflow-hidden' },
+          panels.map((Panel, i) => 
+            h('div', {
+              key: i,
+              className: 'absolute inset-0 panel ' + (i === active ? 'panel-visible' : 'panel-hidden'),
+              style: { zIndex: i === active ? 10 : 0 }
+            }, typeof Panel === 'function' ? h(Panel) : Panel)
+          )
+        )
+      );
+    };
+
+    // Section 1: Introduction
+    const Section1 = () => {
+      const timelineLogos = [
+        { year: 1986, logo: './assets/Picture7.png' },
+        { year: 1996, logo: './assets/Picture12.png' },
+        { year: 2006, logo: './assets/Picture11.png' },
+        { year: 2016, logo: './assets/Picture10.png' },
+        { year: 2026, logo: './assets/Picture6.png', active: true }
+      ];
+
+      const panels = [
+        // Panel 1: Title
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-br from-white via-orange-50 to-yellow-50' },
+          h('div', { className: 'text-center px-6' },
+            h('h2', { className: 'font-serif text-5xl md:text-7xl font-black mb-6' },
+              h('span', { className: 'text-slate-800' }, 'MENGENAL'), h('br'),
+              h('span', { className: 'text-bpsOrange' }, 'SENSUS EKONOMI')
+            ),
+            h('p', { className: 'text-xl text-slate-600' }, 'Scroll untuk menjelajahi')
+          )
+        ),
+        // Panel 2: UU
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-slate-50 to-white' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'max-w-2xl mx-auto bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl border' },
+              h('h3', { className: 'font-serif text-2xl font-black text-bpsOrange mb-4' }, 'Dasar Hukum'),
+              h('p', { className: 'text-lg text-slate-700 leading-relaxed mb-4' },
+                'Sensus Ekonomi merupakan kegiatan yang telah ', h('span', { className: 'text-bpsOrange font-bold' }, 'diamanatkan dalam UU No 16 Tahun 1997'), ' Tentang Statistik.'
+              ),
+              h('p', { className: 'text-lg text-slate-700 leading-relaxed mb-4' },
+                'Sensus dilakukan sekurang-kurangnya ', h('span', { className: 'text-bpsOrange font-bold' }, '10 tahun sekali'), ' oleh Badan Pusat Statistik (BPS).'
+              ),
+              h('div', { className: 'p-4 bg-bpsOrange/10 rounded-xl border border-bpsOrange/30' },
+                h('p', { className: 'text-sm font-bold text-bpsOrange' }, '📋 Dilaksanakan di setiap tahun yang berakhiran angka 6')
+              )
+            )
+          )
+        ),
+        // Panel 3: Jenis Sensus
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-orange-50 to-yellow-50' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'max-w-md mx-auto space-y-4' },
+              h('h3', { className: 'font-serif text-2xl font-black text-center text-slate-800 mb-6' }, 'Tiga Jenis Sensus di Indonesia'),
+              [
+                { logo: './assets/Picture34.png', name: 'Sensus Penduduk', desc: 'Tahun berakhiran 0', year: '20', color: 'bg-blue-500' },
+                { logo: './assets/Picture33.png', name: 'Sensus Pertanian', desc: 'Tahun berakhiran 3', year: '23', color: 'bg-green-500' },
+                { logo: './assets/Picture6.png', name: 'Sensus Ekonomi', desc: 'Tahun berakhiran 6', year: '26', color: 'bg-bpsOrange', highlight: true }
+              ].map((c, i) => h('div', { key: i, className: 'flex items-center gap-4 p-4 rounded-2xl ' + (c.highlight ? 'bg-bpsOrange/10 border-2 border-bpsOrange shadow-xl scale-105' : 'bg-white shadow-lg border') },
+                h('img', { src: c.logo, alt: c.name, className: 'h-14 w-20 object-contain' }),
+                h('div', { className: 'flex-1' }, h('h4', { className: 'font-bold ' + (c.highlight ? 'text-bpsOrange' : 'text-slate-700') }, c.name), h('p', { className: 'text-sm text-slate-500' }, c.desc)),
+                h('div', { className: 'w-12 h-12 ' + c.color + ' rounded-xl flex items-center justify-center text-white font-bold' }, c.year)
+              ))
+            )
+          )
+        ),
+        // Panel 4: Tujuan
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-bpsOrange to-orange-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'flex justify-center' },
+                h('img', { src: './assets/Picture66.png', alt: 'Bung Itung', className: 'h-[280px] md:h-[350px] object-contain drop-shadow-2xl' })
+              ),
+              h('div', { className: 'bg-white rounded-3xl p-8 shadow-2xl' },
+                h('h3', { className: 'font-serif text-2xl md:text-3xl font-black text-bpsOrange mb-6' }, 'TUJUAN SE2026'),
+                h('div', { className: 'bg-slate-50 rounded-xl p-6 mb-6' },
+                  h('p', { className: 'text-slate-600 italic text-lg' }, '"Menyediakan data dasar seluruh kegiatan ekonomi sebagai landasan penyusunan kebijakan pembangunan nasional"')
+                ),
+                h('div', { className: 'grid grid-cols-1 gap-3' },
+                  ['📊 Informasi struktur ekonomi', '🏪 Informasi karakteristik usaha', '🌐 Informasi ekonomi digital'].map((item, i) =>
+                    h('div', { key: i, className: 'p-3 bg-green-50 rounded-xl' }, h('span', { className: 'text-sm font-medium text-slate-700' }, item))
+                  )
+                )
+              )
+            )
+          )
+        ),
+        // Panel 5: Timeline
+        h('div', { className: 'h-full flex items-center bg-gradient-to-br from-slate-900 to-slate-800' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'text-center mb-8' },
+              h('h3', { className: 'font-serif text-3xl md:text-4xl font-black text-white mb-2' }, 'Perjalanan Sensus Ekonomi'),
+              h('p', { className: 'text-slate-400' }, 'SE2026 adalah Sensus Ekonomi ', h('span', { className: 'text-bpsOrange font-bold' }, 'ke-5'))
+            ),
+            h('div', { className: 'relative max-w-4xl mx-auto' },
+              h('div', { className: 'absolute top-1/2 left-0 right-0 h-1 bg-gradient-to-r from-slate-600 via-bpsOrange to-bpsOrange rounded-full -translate-y-1/2' }),
+              h('div', { className: 'relative grid grid-cols-5 gap-2 md:gap-4' },
+                timelineLogos.map((item, i) => h('div', { key: i, className: 'flex flex-col items-center' },
+                  h('div', { className: 'relative z-10 w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center bg-white shadow-xl overflow-hidden ' + (item.active ? 'ring-4 ring-bpsOrange' : '') },
+                    h('img', { src: item.logo, alt: 'SE ' + item.year, className: 'w-full h-full object-contain p-2' })
+                  ),
+                  h('span', { className: 'mt-2 font-bold text-base ' + (item.active ? 'text-bpsOrange' : 'text-slate-400') }, item.year)
+                ))
+              )
+            )
+          )
+        )
+      ];
+
+      return h(ScrollSection, { panels, height: '500vh', id: 'section1' });
+    };
+
+    // Section 2: Scope
+    const Section2 = () => {
+      const kbliCodes = [
+        { code: 'A', status: 'excluded' }, { code: 'B', status: 'checked' }, { code: 'C', status: 'checked' },
+        { code: 'D', status: 'checked' }, { code: 'E', status: 'checked' }, { code: 'F', status: 'checked' },
+        { code: 'G', status: 'checked' }, { code: 'H', status: 'checked' }, { code: 'I', status: 'checked' },
+        { code: 'J', status: 'checked' }, { code: 'K', status: 'checked' }, { code: 'L', status: 'checked' },
+        { code: 'M', status: 'checked' }, { code: 'N', status: 'checked' }, { code: 'O', status: 'excluded' },
+        { code: 'P', status: 'partial' }, { code: 'Q', status: 'partial' }, { code: 'R', status: 'partial' },
+        { code: 'S', status: 'partial' }, { code: 'T', status: 'excluded' }, { code: 'U', status: 'partial' }
+      ];
+
+      const panels = [
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-br from-orange-50 to-yellow-50' },
+          h('div', { className: 'text-center px-6' },
+            h('h2', { className: 'font-serif text-4xl md:text-6xl font-black mb-6' },
+              h('span', { className: 'text-bpsOrange' }, 'KEGIATAN EKONOMI'), h('br'),
+              h('span', { className: 'text-slate-800' }, 'YANG AKAN DIDATA')
+            ),
+            h('p', { className: 'text-xl text-slate-600' }, 'Seluruh lapangan usaha kecuali A, O, T')
+          )
+        ),
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-r from-slate-50 to-white' },
+          h('div', { className: 'flex flex-col lg:flex-row items-center gap-8' },
+            h('div', { style: { width: '320px', height: '320px' } },
+              h('svg', { viewBox: '0 0 400 400', className: 'w-full h-full' },
+                ['#EC4899', '#8B5CF6', '#EF4444', '#F97316', '#FBBF24', '#84CC16', '#22C55E', '#14B8A6'].map((color, i) => {
+                  const sa = (i * 45) - 90, ea = sa + 44, iR = 75, oR = 150;
+                  const sr = (sa * Math.PI) / 180, er = (ea * Math.PI) / 180;
+                  const x1 = 200 + iR * Math.cos(sr), y1 = 200 + iR * Math.sin(sr);
+                  const x2 = 200 + oR * Math.cos(sr), y2 = 200 + oR * Math.sin(sr);
+                  const x3 = 200 + oR * Math.cos(er), y3 = 200 + oR * Math.sin(er);
+                  const x4 = 200 + iR * Math.cos(er), y4 = 200 + iR * Math.sin(er);
+                  return h('path', { key: i, d: `M ${x1} ${y1} L ${x2} ${y2} A ${oR} ${oR} 0 0 1 ${x3} ${y3} L ${x4} ${y4} A ${iR} ${iR} 0 0 0 ${x1} ${y1}`, fill: color, stroke: 'white', strokeWidth: 2 });
+                }),
+                h('circle', { cx: 200, cy: 200, r: 75, fill: 'white' }),
+                h('circle', { cx: 200, cy: 200, r: 65, fill: '#F97316' }),
+                h('text', { x: 200, y: 195, textAnchor: 'middle', fill: 'white', style: { fontSize: '16px', fontWeight: 'bold' } }, 'SE2026'),
+                h('text', { x: 200, y: 215, textAnchor: 'middle', fill: 'white', style: { fontSize: '10px' } }, 'kecuali A, O, T')
+              )
+            ),
+            h('div', { className: 'bg-white/90 backdrop-blur rounded-2xl p-6 shadow-xl' },
+              h('h3', { className: 'font-serif text-xl font-bold text-bpsOrange mb-4' }, '8 Kelompok Data Utama'),
+              h('div', { className: 'space-y-2 text-sm text-slate-600' },
+                ['Kewilayahan', 'Struktur Ekonomi', 'Lapangan Usaha', 'Skala Usaha', 'Karakteristik', 'Permodalan', 'Kinerja', 'Kendala'].map((item, i) =>
+                  h('div', { key: i, className: 'flex items-center gap-2' },
+                    h('div', { className: 'w-3 h-3 rounded-full', style: { backgroundColor: ['#EC4899', '#8B5CF6', '#EF4444', '#F97316', '#FBBF24', '#84CC16', '#22C55E', '#14B8A6'][i] } }),
+                    h('span', null, item)
+                  )
+                )
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center justify-center bg-white' },
+          h('div', { className: 'max-w-4xl mx-auto px-6' },
+            h('h3', { className: 'font-serif text-2xl md:text-3xl font-bold text-center mb-8' }, h('span', { className: 'text-bpsOrange' }, 'Kategori KBLI'), ' yang Dicakup'),
+            h('div', { className: 'grid grid-cols-7 gap-3 mb-8 justify-items-center' },
+              kbliCodes.map((item, i) => h('div', { key: i, className: 'relative w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center font-bold text-base md:text-lg ' + (item.status === 'excluded' ? 'bg-red-500 text-white' : item.status === 'partial' ? 'bg-yellow-400 text-slate-800' : 'bg-gradient-to-br from-yellow-400 to-orange-400 text-white') }, item.code))
+            ),
+            h('div', { className: 'grid grid-cols-3 gap-3' },
+              h('div', { className: 'flex items-center gap-2 p-3 bg-red-50 rounded-xl' },
+                h('div', { className: 'w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center flex-shrink-0' }, h(XCircle, { className: 'w-4 h-4 text-white' })),
+                h('div', { className: 'text-xs' }, h('strong', { className: 'text-red-600' }, 'A, O, T'), h('br'), h('span', { className: 'text-slate-500' }, 'Tidak dicakup'))
+              ),
+              h('div', { className: 'flex items-center gap-2 p-3 bg-green-50 rounded-xl' },
+                h('div', { className: 'w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-400 rounded-lg flex items-center justify-center flex-shrink-0' }, h(CheckCircle2, { className: 'w-4 h-4 text-white' })),
+                h('div', { className: 'text-xs' }, h('strong', { className: 'text-green-600' }, 'Centang'), h('br'), h('span', { className: 'text-slate-500' }, 'Didata lengkap'))
+              ),
+              h('div', { className: 'flex items-center gap-2 p-3 bg-yellow-50 rounded-xl' },
+                h('div', { className: 'w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center flex-shrink-0' }, h(AlertCircle, { className: 'w-4 h-4 text-slate-800' })),
+                h('div', { className: 'text-xs' }, h('strong', { className: 'text-yellow-600' }, 'Sebagian'), h('br'), h('span', { className: 'text-slate-500' }, 'Rincian tertentu'))
+              )
+            )
+          )
+        )
+      ];
+
+      return h(ScrollSection, { panels, height: '300vh', id: 'section2' });
+    };
+
+    // Section 3: Data Details
+    const Section3 = () => {
+      const panels = [
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-br from-yellow-50 via-orange-50 to-white' },
+          h('div', { className: 'text-center px-6' },
+            h('h2', { className: 'font-serif text-4xl md:text-6xl font-black mb-6' },
+              h('span', { className: 'text-bpsOrange' }, 'RINCIAN DATA'), h('br'),
+              h('span', { className: 'text-slate-800' }, 'YANG DIKUMPULKAN')
+            ),
+            h('p', { className: 'text-xl text-slate-600' }, '3 kelompok data utama untuk setiap usaha')
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-yellow-400 to-yellow-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'bg-white rounded-3xl p-8 shadow-2xl' },
+                h('div', { className: 'flex items-center gap-4 mb-6' },
+                  h('div', { className: 'w-16 h-16 bg-yellow-500 rounded-2xl flex items-center justify-center shadow-lg' }, h(FileText, { className: 'w-8 h-8 text-white' })),
+                  h('div', null, h('span', { className: 'text-sm text-yellow-600 font-bold' }, 'KELOMPOK 1'), h('h3', { className: 'text-2xl font-black text-slate-800' }, 'Detail Usaha/Direktori'))
+                ),
+                h('p', { className: 'text-slate-600 mb-4' }, 'Informasi dasar dari setiap usaha yang didata'),
+                h('div', { className: 'grid grid-cols-2 gap-3' },
+                  [{ icon: MapPin, text: 'Nama & Alamat Usaha' }, { icon: FileText, text: 'NIB & Status Usaha' }, { icon: MapPin, text: 'Jenis Kawasan' }, { icon: Building2, text: 'Kegiatan Utama (KBLI)' }, { icon: Building2, text: 'Jenis Perusahaan' }, { icon: Store, text: 'Produk & Jaringan Usaha' }].map((item, i) =>
+                    h('div', { key: i, className: 'flex items-center gap-2 p-3 bg-yellow-50 rounded-xl' }, h(item.icon, { className: 'w-5 h-5 text-yellow-600' }), h('span', { className: 'text-sm font-medium text-slate-700' }, item.text))
+                  )
+                )
+              ),
+              h('div', { className: 'flex justify-center' },
+                h('img', { src: './assets/Picture63.png', alt: 'Bung Itung', className: 'h-[280px] md:h-[350px] object-contain drop-shadow-xl' })
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-bpsOrange to-orange-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'flex justify-center order-2 lg:order-1' },
+                h('img', { src: './assets/Picture65.png', alt: 'Bung Itung', className: 'h-[280px] md:h-[350px] object-contain drop-shadow-xl' })
+              ),
+              h('div', { className: 'bg-white rounded-3xl p-8 shadow-2xl order-1 lg:order-2' },
+                h('div', { className: 'flex items-center gap-4 mb-6' },
+                  h('div', { className: 'w-16 h-16 bg-bpsOrange rounded-2xl flex items-center justify-center shadow-lg' }, h(Store, { className: 'w-8 h-8 text-white' })),
+                  h('div', null, h('span', { className: 'text-sm text-bpsOrange font-bold' }, 'KELOMPOK 2'), h('h3', { className: 'text-2xl font-black text-slate-800' }, 'Karakteristik Usaha'))
+                ),
+                h('div', { className: 'grid grid-cols-2 gap-3' },
+                  [{ icon: Users, text: 'Tenaga Kerja' }, { icon: Wifi, text: 'Penggunaan Internet' }, { icon: Award, text: 'Sertifikasi Usaha' }, { icon: Leaf, text: 'Aspek Lingkungan' }].map((item, i) =>
+                    h('div', { key: i, className: 'flex items-center gap-2 p-3 bg-orange-50 rounded-xl' }, h(item.icon, { className: 'w-5 h-5 text-bpsOrange' }), h('span', { className: 'text-sm font-medium text-slate-700' }, item.text))
+                  )
+                )
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-blue-500 to-blue-600' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'bg-white rounded-3xl p-8 shadow-2xl' },
+                h('div', { className: 'flex items-center gap-4 mb-6' },
+                  h('div', { className: 'w-16 h-16 bg-blue-500 rounded-2xl flex items-center justify-center shadow-lg' }, h(DollarSign, { className: 'w-8 h-8 text-white' })),
+                  h('div', null, h('span', { className: 'text-sm text-blue-600 font-bold' }, 'KELOMPOK 3'), h('h3', { className: 'text-2xl font-black text-slate-800' }, 'Data Moneter'))
+                ),
+                h('div', { className: 'grid grid-cols-2 gap-3' },
+                  [{ icon: CreditCard, text: 'Pengeluaran Usaha' }, { icon: Building2, text: 'Total Aset' }, { icon: DollarSign, text: 'Omzet/Pendapatan' }, { icon: Users, text: 'Sumber Modal' }].map((item, i) =>
+                    h('div', { key: i, className: 'flex items-center gap-2 p-3 bg-blue-50 rounded-xl' }, h(item.icon, { className: 'w-5 h-5 text-blue-600' }), h('span', { className: 'text-sm font-medium text-slate-700' }, item.text))
+                  )
+                )
+              ),
+              h('div', { className: 'flex justify-center' },
+                h('img', { src: './assets/Picture66.png', alt: 'Bung Itung', className: 'h-[280px] md:h-[350px] object-contain drop-shadow-xl' })
+              )
+            )
+          )
+        )
+      ];
+
+      return h(ScrollSection, { panels, height: '400vh', id: 'section3' });
+    };
+
+    // Section 4: Process
+    const Section4 = () => {
+      const panels = [
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-br from-blue-50 via-white to-purple-50' },
+          h('div', { className: 'text-center px-6' },
+            h('h2', { className: 'font-serif text-4xl md:text-6xl font-black mb-6' },
+              h('span', { className: 'text-slate-800' }, 'TAHAPAN'), h('br'),
+              h('span', { className: 'text-bpsOrange' }, 'PENGUMPULAN DATA')
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-blue-500 to-blue-600' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-block bg-white/20 rounded-full px-4 py-2 mb-4 font-bold' }, 'TAHAP 01'),
+                h('h3', { className: 'font-serif text-4xl font-black mb-4' }, 'Prelist Usaha'),
+                h('p', { className: 'text-xl text-blue-100 mb-6' }, 'Menyusun basis data dari berbagai sumber'),
+                h('div', { className: 'flex flex-wrap gap-4' },
+                  [{ logo: './assets/Picture8.png' }, { logo: './assets/Picture9.png' }, { logo: './assets/Picture32.png' }].map((s, i) =>
+                    h('div', { key: i, className: 'bg-white rounded-2xl p-3 shadow-xl' }, h('img', { src: s.logo, className: 'h-12 object-contain' }))
+                  )
+                )
+              ),
+              h('div', { className: 'flex justify-center' },
+                h('div', { className: 'bg-white/20 backdrop-blur rounded-3xl p-10' }, h(Database, { className: 'w-28 h-28 text-white' }))
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-bpsOrange to-orange-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'flex justify-center' },
+                h('img', { src: './assets/Picture67.png', alt: 'Bung Itung', className: 'h-[300px] md:h-[380px] object-contain drop-shadow-2xl' })
+              ),
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-block bg-white/20 rounded-full px-4 py-2 mb-4 font-bold' }, 'TAHAP 02'),
+                h('h3', { className: 'font-serif text-4xl font-black mb-6' }, 'Pendataan Lapangan'),
+                h('div', { className: 'space-y-3' },
+                  [{ code: 'CAPI', icon: Smartphone, desc: 'Computer Assisted Personal Interview' }, { code: 'CAWI', icon: Globe, desc: 'Computer Assisted Web Interview' }, { code: 'PAPI', icon: Clipboard, desc: 'Paper and Pencil Interview' }].map((mode, i) =>
+                    h('div', { key: i, className: 'bg-white rounded-2xl p-4 flex items-center gap-4 shadow-lg' },
+                      h('div', { className: 'w-12 h-12 bg-bpsOrange rounded-xl flex items-center justify-center text-white' }, h(mode.icon, { className: 'w-6 h-6' })),
+                      h('div', null, h('h4', { className: 'font-bold text-slate-800' }, mode.code), h('p', { className: 'text-xs text-slate-500' }, mode.desc))
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-purple-600 to-purple-700' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-block bg-white/20 rounded-full px-4 py-2 mb-4 font-bold' }, 'TAHAP 03'),
+                h('h3', { className: 'font-serif text-4xl font-black mb-6' }, 'Pengolahan Data'),
+                h('div', { className: 'bg-white/10 backdrop-blur rounded-2xl p-6' },
+                  h('p', { className: 'text-purple-100 text-lg' }, 'Data diolah dengan ', h('span', { className: 'font-bold text-white' }, 'metode akurat'), ', menghasilkan ', h('span', { className: 'font-bold text-yellow-300' }, 'data agregasi SE2026'))
+                )
+              ),
+              h('div', { className: 'flex justify-center' },
+                h('div', { className: 'bg-white/20 backdrop-blur rounded-3xl p-8 flex items-center gap-6' },
+                  h('div', { className: 'flex gap-2' }, [1,2,3].map(i => h('div', { key: i, className: 'w-6 h-16 bg-purple-300 rounded-t-lg' }))),
+                  h('span', { className: 'text-3xl text-white' }, '→'),
+                  h('div', { className: 'w-20 h-20 bg-green-400 rounded-full flex items-center justify-center' }, h(CheckCircle2, { className: 'w-10 h-10 text-white' }))
+                )
+              )
+            )
+          )
+        )
+      ];
+
+      return h(ScrollSection, { panels, height: '400vh', id: 'section4' });
+    };
+
+    // Section 5: Outputs
+    const Section5 = () => {
+      const panels = [
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-br from-teal-50 via-white to-blue-50' },
+          h('div', { className: 'text-center px-6' },
+            h('h2', { className: 'font-serif text-4xl md:text-6xl font-black mb-6' },
+              h('span', { className: 'text-bpsOrange' }, 'INFORMASI'), h('br'),
+              h('span', { className: 'text-slate-800' }, 'YANG DIHASILKAN')
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-bpsOrange to-orange-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-flex items-center gap-3 bg-white/20 rounded-2xl px-5 py-3 mb-6' }, h(PieChart, { className: 'w-6 h-6' }), h('span', { className: 'font-bold' }, 'OUTPUT 1')),
+                h('h3', { className: 'font-serif text-4xl font-black mb-6' }, 'Struktur Ekonomi'),
+                h('div', { className: 'space-y-4' },
+                  [{ icon: Users, title: 'Lapangan Kerja', desc: 'Jumlah dan penyerapan tenaga kerja' }, { icon: PieChart, title: 'Demografi Pengusaha', desc: 'Distribusi berdasarkan demografi' }].map((item, i) =>
+                    h('div', { key: i, className: 'bg-white rounded-2xl p-4 shadow-xl' },
+                      h('div', { className: 'flex items-center gap-3 mb-2' }, h(item.icon, { className: 'w-5 h-5 text-bpsOrange' }), h('h4', { className: 'font-bold text-slate-800' }, item.title)),
+                      h('p', { className: 'text-sm text-slate-600' }, item.desc)
+                    )
+                  )
+                )
+              ),
+              h('div', { className: 'flex justify-center' }, h('div', { className: 'bg-white/20 rounded-full w-56 h-56 flex items-center justify-center' }, h(PieChart, { className: 'w-28 h-28 text-white' })))
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-teal-500 to-cyan-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'flex justify-center' }, h('div', { className: 'bg-white/20 rounded-3xl p-8' }, h(Globe, { className: 'w-28 h-28 text-white' }))),
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-flex items-center gap-3 bg-white/20 rounded-2xl px-5 py-3 mb-6' }, h(Globe, { className: 'w-6 h-6' }), h('span', { className: 'font-bold' }, 'OUTPUT 2')),
+                h('h3', { className: 'font-serif text-4xl font-black mb-6' }, 'Ekonomi Digital'),
+                h('div', { className: 'space-y-4' },
+                  [{ icon: CreditCard, title: 'Digitalisasi Pembayaran', desc: 'Adopsi QRIS dan pembayaran digital' }, { icon: Globe, title: 'Platform Digital', desc: 'Penggunaan e-commerce dan aplikasi' }].map((item, i) =>
+                    h('div', { key: i, className: 'bg-white rounded-2xl p-4 shadow-xl' },
+                      h('div', { className: 'flex items-center gap-3 mb-2' }, h(item.icon, { className: 'w-5 h-5 text-teal-500' }), h('h4', { className: 'font-bold text-slate-800' }, item.title)),
+                      h('p', { className: 'text-sm text-slate-600' }, item.desc)
+                    )
+                  )
+                )
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-yellow-400 to-amber-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', null,
+                h('div', { className: 'inline-flex items-center gap-3 bg-white/20 rounded-2xl px-5 py-3 mb-6 text-white' }, h(Store, { className: 'w-6 h-6' }), h('span', { className: 'font-bold' }, 'OUTPUT 3')),
+                h('h3', { className: 'font-serif text-4xl font-black text-white mb-6' }, 'Karakteristik Usaha'),
+                h('div', { className: 'bg-white rounded-2xl p-6 shadow-xl' },
+                  h('h4', { className: 'font-bold text-slate-800 mb-4' }, 'Skala Usaha'),
+                  h('p', { className: 'text-slate-600 mb-4' }, 'Klasifikasi UMKM atau UMB (Usaha Menengah Besar)'),
+                  h('div', { className: 'flex gap-3' },
+                    h('div', { className: 'flex-1 bg-yellow-50 rounded-xl p-4 text-center' }, h('span', { className: 'text-3xl mb-2 block' }, '🏪'), h('span', { className: 'font-bold text-slate-700' }, 'UMKM')),
+                    h('div', { className: 'flex-1 bg-yellow-50 rounded-xl p-4 text-center' }, h('span', { className: 'text-3xl mb-2 block' }, '🏢'), h('span', { className: 'font-bold text-slate-700' }, 'UMB'))
+                  )
+                )
+              ),
+              h('div', { className: 'flex justify-center' }, h('img', { src: './assets/Picture63.png', alt: 'Bung Itung', className: 'h-[300px] md:h-[380px] object-contain drop-shadow-2xl' }))
+            )
+          )
+        )
+      ];
+
+      return h(ScrollSection, { panels, height: '400vh', id: 'section5' });
+    };
+
+    // Section 6: Benefits
+    const Section6 = () => {
+      const panels = [
+        h('div', { className: 'h-full flex items-center justify-center bg-gradient-to-br from-orange-50 via-white to-yellow-50' },
+          h('div', { className: 'text-center px-6' },
+            h('h2', { className: 'font-serif text-4xl md:text-6xl font-black mb-6' },
+              h('span', { className: 'text-bpsOrange' }, 'MANFAAT DATA'), h('br'),
+              h('span', { className: 'text-slate-800' }, 'SENSUS EKONOMI 2026')
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-bpsOrange to-orange-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-flex items-center gap-3 bg-white/20 rounded-2xl px-5 py-3 mb-6' }, h(Users, { className: 'w-6 h-6' }), h('span', { className: 'font-bold' }, 'MASYARAKAT')),
+                h('h3', { className: 'font-serif text-3xl font-black mb-6' }, 'Manfaat untuk Pelaku Usaha'),
+                h('div', { className: 'space-y-3' },
+                  ['✓ Profil usaha terdata secara resmi oleh negara', '✓ Usaha rumah tangga mudah menerima bantuan', '✓ Peluang kolaborasi dan kemitraan antar usaha'].map((item, i) =>
+                    h('div', { key: i, className: 'bg-white/10 backdrop-blur rounded-xl p-4' }, h('p', { className: 'font-medium' }, item))
+                  )
+                )
+              ),
+              h('div', { className: 'flex justify-center' }, h('div', { className: 'bg-white/20 rounded-full w-56 h-56 flex items-center justify-center' }, h(Users, { className: 'w-28 h-28 text-white' })))
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-r from-blue-600 to-blue-700' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'flex justify-center' }, h('div', { className: 'bg-white/20 rounded-full w-56 h-56 flex items-center justify-center' }, h(Landmark, { className: 'w-28 h-28 text-white' }))),
+              h('div', { className: 'text-white' },
+                h('div', { className: 'inline-flex items-center gap-3 bg-white/20 rounded-2xl px-5 py-3 mb-6' }, h(Landmark, { className: 'w-6 h-6' }), h('span', { className: 'font-bold' }, 'PEMERINTAH')),
+                h('h3', { className: 'font-serif text-3xl font-black mb-6' }, 'Manfaat untuk Kebijakan'),
+                h('div', { className: 'space-y-3' },
+                  ['✓ Kebijakan ekosistem usaha tepat sasaran', '✓ Akselerasi penciptaan lapangan kerja baru', '✓ Penyaluran bantuan dan subsidi lebih tepat'].map((item, i) =>
+                    h('div', { key: i, className: 'bg-white/10 backdrop-blur rounded-xl p-4' }, h('p', { className: 'font-medium' }, item))
+                  )
+                )
+              )
+            )
+          )
+        ),
+        h('div', { className: 'h-full flex items-center bg-gradient-to-br from-yellow-400 via-orange-400 to-yellow-500' },
+          h('div', { className: 'container mx-auto px-6' },
+            h('div', { className: 'grid grid-cols-1 lg:grid-cols-2 gap-8 items-center' },
+              h('div', { className: 'flex justify-center relative' },
+                h('div', { className: 'absolute -top-6 right-10 w-14 h-14 bg-yellow-300 rounded-full flex items-center justify-center shadow-lg' }, h('span', { className: 'text-3xl' }, '💡')),
+                h('img', { src: './assets/Picture64.png', alt: 'Bung Itung', className: 'h-[300px] md:h-[380px] object-contain drop-shadow-2xl' })
+              ),
+              h('div', null,
+                h('div', { className: 'bg-white/95 backdrop-blur rounded-3xl p-8 shadow-2xl' },
+                  h('div', { className: 'text-center mb-6' },
+                    h('p', { className: 'text-slate-600 mb-2' }, 'Khawatir ', h('span', { className: 'text-red-500 font-bold' }, 'kebocoran data'), '?'),
+                    h('h3', { className: 'font-serif text-4xl md:text-5xl font-black text-bpsOrange' }, 'TENANG SAJA!')
+                  ),
+                  h('div', { className: 'flex items-center gap-4 bg-blue-50 rounded-2xl p-5' },
+                    h('div', { className: 'w-14 h-14 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0' }, h(Shield, { className: 'w-7 h-7 text-white' })),
+                    h('p', { className: 'text-sm text-slate-600' }, 'Bung Itung dan tim BPS memastikan data Anda ', h('span', { className: 'font-bold text-green-600' }, 'aman & terlindungi'), ', sesuai ', h('span', { className: 'font-bold text-blue-600' }, 'SOP keamanan data yang berlaku'))
+                  )
+                )
+              )
+            )
+          )
+        )
+      ];
+
+      return h(ScrollSection, { panels, height: '400vh', id: 'section6' });
+    };
+
+    // Footer
+    const Footer = () => h('footer', { className: 'bg-slate-900 text-white py-16' },
+      h('div', { className: 'container mx-auto px-6' },
+        h('div', { className: 'flex flex-col md:flex-row items-center justify-between gap-8' },
+          h('div', { className: 'flex items-center gap-4' },
+            h('img', { src: './assets/Picture6.png', alt: 'SE2026', className: 'h-16 object-contain' }),
+            h('div', null,
+              h('div', { className: 'text-sm text-slate-400 uppercase tracking-wider' }, 'Badan Pusat Statistik'),
+              h('div', { className: 'font-serif text-xl font-bold' }, 'Sensus Ekonomi 2026')
+            )
+          ),
+          h('div', { className: 'text-center md:text-right' },
+            h('p', { className: 'text-bpsOrange font-bold text-lg mb-2' }, 'Mencatat Ekonomi Indonesia'),
+            h('p', { className: 'text-slate-500 text-sm' }, '© 2026 Badan Pusat Statistik Republik Indonesia')
+          )
+        )
+      )
+    );
+
+    // App
+    const App = () => {
+      const { scrollYProgress } = useScroll();
+      const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 });
+
+      return h('div', { className: 'bg-white text-slate-800 font-sans selection:bg-bpsOrange selection:text-white' },
+        h(motion.div, { className: 'fixed top-0 left-0 right-0 h-1 bg-bpsOrange origin-left z-[100]', style: { scaleX } }),
+        h(Navbar),
+        h('main', null,
+          h(HeroSection),
+          h(Section1),
+          h(Section2),
+          h(Section3),
+          h(Section4),
+          h(Section5),
+          h(Section6)
+        ),
+        h(Footer)
+      );
+    };
+
+    ReactDOM.createRoot(document.getElementById('root')).render(h(App));
+  </script>
+</body>
 </html>

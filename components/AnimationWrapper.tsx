@@ -25,29 +25,29 @@ const AnimationWrapper: React.FC<AnimationWrapperProps> = ({
     switch (dir) {
       case 'up':
         return {
-          hidden: { opacity: 0, y: 60 },
+          hidden: { opacity: 0, y: 40 },
           visible: { opacity: 1, y: 0 }
         };
       case 'down':
         return {
-          hidden: { opacity: 0, y: -60 },
+          hidden: { opacity: 0, y: -40 },
           visible: { opacity: 1, y: 0 }
         };
       case 'left':
         return {
-          hidden: { opacity: 0, x: -60 },
+          hidden: { opacity: 0, x: -40 },
           visible: { opacity: 1, x: 0 }
         };
       case 'right':
         return {
-          hidden: { opacity: 0, x: 60 },
+          hidden: { opacity: 0, x: 40 },
           visible: { opacity: 1, x: 0 }
         };
       case 'zoom':
         return {
-            hidden: { opacity: 0, scale: 0.8 },
-            visible: { opacity: 1, scale: 1 }
-        }
+          hidden: { opacity: 0, scale: 0.9 },
+          visible: { opacity: 1, scale: 1 }
+        };
       default:
         return {
           hidden: { opacity: 0 },
@@ -70,22 +70,26 @@ const AnimationWrapper: React.FC<AnimationWrapperProps> = ({
   );
 };
 
-export const ParallaxBackground: React.FC<{ children: React.ReactNode, speed?: number, className?: string }> = ({ children, speed = 1, className = "" }) => {
-    const ref = useRef<HTMLDivElement>(null);
-    const { scrollYProgress } = useScroll({
-        target: ref,
-        offset: ["start end", "end start"]
-    });
+export const ParallaxBackground: React.FC<{ children: React.ReactNode, speed?: number, className?: string }> = ({ 
+  children, 
+  speed = 1, 
+  className = "" 
+}) => {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"]
+  });
 
-    const y = useTransform(scrollYProgress, [0, 1], [-50 * speed, 50 * speed]);
+  const y = useTransform(scrollYProgress, [0, 1], [-30 * speed, 30 * speed]);
 
-    return (
-        <div ref={ref} className={`relative overflow-hidden ${className}`}>
-            <motion.div style={{ y }} className="w-full h-full">
-                {children}
-            </motion.div>
-        </div>
-    );
-}
+  return (
+    <div ref={ref} className={`relative overflow-hidden ${className}`}>
+      <motion.div style={{ y }} className="w-full h-full">
+        {children}
+      </motion.div>
+    </div>
+  );
+};
 
 export default AnimationWrapper;
